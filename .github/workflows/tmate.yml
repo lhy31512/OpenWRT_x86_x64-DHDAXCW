@@ -1,0 +1,27 @@
+name: tmate-debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Update apt and install basic tools
+        run: |
+          sudo killall apt apt-get || true
+          sudo rm -f /var/lib/apt/lists/lock
+          sudo rm -f /var/lib/dpkg/lock-frontend
+          sudo rm -f /var/lib/dpkg/lock
+          sudo dpkg --configure -a || true
+          sudo apt update
+          sudo apt install -y htop nano curl git
+
+      - name: Start tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          limit-access-to-actor: false
