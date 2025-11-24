@@ -26,21 +26,22 @@ jobs:
         root-reserve-mb: 512
         swap-size-mb: 1024
         remove-dotnet: 'true'
+        
     - name: Check out the project branch
-      uses: actions/checkout@main
+      uses: actions/checkout@v4
 
     - name: Initialize the compilation environment
       env:
         DEBIAN_FRONTEND: noninteractive
       run: |
-        ( sudo -E apt-get -qq update
-        sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
+        sudo apt-get -qq update
+        sudo apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
         git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev \
         genisoimage
-        sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
+        sudo apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
-        sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean ) &
+        sudo apt-get -qq autoremove --purge
+        sudo apt-get -qq clean
         sudo timedatectl set-timezone "$TZ"
         
     - name: Initialize Environment and Display System Info
@@ -105,7 +106,7 @@ jobs:
 
     - name: Organize and Rename Files
       id: organize
-      if: ${{ env.UPLOAD_FIRMWARE == 'true' && !cancelled() }}
+      if: env.UPLOAD_FIRMWARE == 'true' && !cancelled()
       run: |
         cd openwrt/bin/targets/x86/64
         rm -rf packages *rootfs.tar.gz *rootfs.img.gz *combined.img.gz *.bin *.config *.buildinfo *.json sha256sums *.manifest
@@ -116,7 +117,7 @@ jobs:
         echo "status=success" >> $GITHUB_OUTPUT
         
     - name: Upload the firmware to github
-      uses: actions/upload-artifact@main
+      uses: actions/upload-artifact@v4
       if: steps.organize.outputs.status == 'success' && !cancelled()
       with:
         name: ${{ env.date1 }}_${{ env.OPENWRT_NAME }}_${{ env.OPENWRT_NAME1 }}
@@ -138,6 +139,6 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         files: ${{ env.FIRMWARE }}/*
-        name: ${{ env.date3 }}
+        name: ${{ env.date1 }}  # ✅ 修正为 date1
         tag_name: ${{ steps.tag.outputs.release_tag }}
         body_path: release.txt
