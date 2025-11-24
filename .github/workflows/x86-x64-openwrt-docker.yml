@@ -1,8 +1,6 @@
 name: immortalwrt_x86_64_docker
 
 on:
-  schedule:
-    - cron: 0 16 * * *
   workflow_dispatch:
 
 env:
@@ -13,13 +11,13 @@ env:
   DIY_P2_SH: immortalwrt/diy-part2.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
-  TZ: Asia/Shanghai
+  TZ: Asia/Taipei
   OPENWRT_NAME: immortalwrt
   OPENWRT_NAME1: x86_64
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Maximize build space
@@ -37,7 +35,8 @@ jobs:
       run: |
         ( sudo -E apt-get -qq update
         sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
-        git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev
+        git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev \
+        genisoimage
         sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq autoremove --purge
@@ -89,6 +88,7 @@ jobs:
         CONFIG_PACKAGE_luci-lib-docker=y
         ' >> .config
         make defconfig
+        cat .config
         make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
@@ -109,9 +109,6 @@ jobs:
       run: |
         cd openwrt/bin/targets/x86/64
         rm -rf packages *rootfs.tar.gz *rootfs.img.gz *combined.img.gz *.bin *.config *.buildinfo *.json sha256sums *.manifest
-        for file in immortalwrt-*-*.img.gz; do
-            mv "$file" "docker-$file"
-        done
         echo "FIRMWARE=$PWD" >> $GITHUB_ENV
         echo "status=success" >> $GITHUB_OUTPUT
         
