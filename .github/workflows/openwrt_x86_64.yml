@@ -6,13 +6,13 @@ on:
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-24.10
-  CONFIG_FILE: immortalwrt/x86_64/defconfig
-  DIY_P1_SH: immortalwrt/diy-part1.sh
-  DIY_P2_SH: immortalwrt/diy-part2.sh
+  CONFIG_FILE: ga/x86_64/defconfig
+  DIY_P1_SH: ga/diy-part1.sh
+  DIY_P2_SH: ga/diy-part2.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
   TZ: Asia/Taipei
-  OPENWRT_NAME: immortalwrt
+  OPENWRT_NAME: ga
   OPENWRT_NAME1: x86_64
 
 jobs:
@@ -46,10 +46,10 @@ jobs:
     - name: Initialize Environment and Display System Info
       env:
         DEBIAN_FRONTEND: noninteractive
-      run: |
+      run: |        
         chmod +x $OPENWRT_NAME/*.sh
         $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
-        
+      
     - name: Download firmware source code
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
