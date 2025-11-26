@@ -8355,7 +8355,7 @@ CONFIG_PACKAGE_uhttpd=y
 CONFIG_PACKAGE_uhttpd-mod-ubus=y
 # CONFIG_PACKAGE_uhttpd-mod-ucode is not set
 # CONFIG_PACKAGE_uwsgi is not set
-# CONFIG_PACKAGE_v2ray-plugin=y
+CONFIG_PACKAGE_v2ray-plugin=y
 # CONFIG_PACKAGE_v2raya is not set
 # CONFIG_PACKAGE_xfrpc is not set
 CONFIG_PACKAGE_xray-plugin=y
@@ -9763,4 +9763,4 @@ CONFIG_PACKAGE_yq=y
 # end of Font-Utils
 # end of Xorg
 
-CONFIG_OVERRIDE_PKGS="adguardhome chinadns-ng dns2socks dns2tcp dnsproxy gn hysteria ipt2socks libmbim lua-neturl luci-app-oled microsocks mosdns naiveproxy redsocks2 sendat shadow-tls shadowsocks-rust simple-obfs sms-tool tcping trojan tuic-client v2ray-core v2raya xray-core xray-plugin"
+CONFIG_OVERRIDE_PKGS="adguardhome chinadns-ng dns2socks dns2tcp dnsproxy gn hysteria ipt2socks libmbim lua-neturl luci-app-oled microsocks mosdns naiveproxy redsocks2 sendat shadow-tls shadowsocks-rust simple-obfs sms-tool tcping trojan tuic-client v2ray-core v2ray-plugin v2raya xray-core xray-plugin"
