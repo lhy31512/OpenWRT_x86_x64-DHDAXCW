@@ -1,6 +1,8 @@
 name: OpenWRT_x86_64
 
 on:
+  schedule:
+    - cron: 0 16 * * *
   workflow_dispatch:
 
 env:
@@ -11,13 +13,13 @@ env:
   DIY_P2_SH: ga/diy-part2.sh
   UPLOAD_FIRMWARE: true
   UPLOAD_RELEASE: true
-  TZ: Asia/Taipei
+  TZ: Asia/Shanghai
   OPENWRT_NAME: ga
   OPENWRT_NAME1: x86_64
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Maximize build space
@@ -26,8 +28,25 @@ jobs:
         root-reserve-mb: 512
         swap-size-mb: 1024
         remove-dotnet: 'true'
+        remove-android: 'true'
+        remove-haskell: 'true'
+        remove-codeql: 'true'
+        
     - name: Check out the project branch
       uses: actions/checkout@main
+      with:
+          fetch-depth: 0
+          
+    - name: Clean build caches
+      run: |
+        echo "Cleaning previous build artifacts and caches..."
+        sudo rm -rf $GITHUB_WORKSPACE/openwrt || true
+        sudo rm -rf $RUNNER_TEMP/* || true
+        sudo rm -rf $RUNNER_TOOL_CACHE/* || true
+        sudo apt-get -qq clean || true
+        sudo rm -rf /var/lib/apt/lists/* || true
+        rm -rf ~/.cache/* || true
+        echo "Cache cleanup complete."
 
     - name: Initialize the compilation environment
       env:
@@ -35,49 +54,29 @@ jobs:
       run: |
         ( sudo -E apt-get -qq update
         sudo -E apt-get -qq install build-essential clang flex g++ gawk gcc-multilib gettext \
-        genisoimage git libncurses5-dev libssl-dev python3-full python3-setuptools rsync unzip zlib1g-dev \
-        swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev libpcre3-dev
-        sudo -E apt-get -qq purge azure-cli ghc* zulu* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
+        git libncurses5-dev libssl-dev python3-distutils rsync unzip zlib1g-dev swig libpython3-dev aria2 jq subversion qemu-utils ccache rename libelf-dev
+        sudo -E apt-get -qq purge azure-cli ghc* zulu* hhvm llvm* firefox powershell openjdk* dotnet* google* mysql* php* android* rename speedtest-cli
         sudo rm -rf /etc/apt/sources.list.d/* /usr/share/dotnet /usr/local/lib/android /opt/ghc
         sudo -E apt-get -qq autoremove --purge
-        sudo -E apt-get -qq clean )
+        sudo -E apt-get -qq clean ) &
         sudo timedatectl set-timezone "$TZ"
-        sudo ln -sf /usr/bin/genisoimage /usr/bin/mkisofs
         
     - name: Initialize Environment and Display System Info
       env:
         DEBIAN_FRONTEND: noninteractive
-      run: |        
+      run: |
         chmod +x $OPENWRT_NAME/*.sh
-        #$GITHUB_WORKSPACE/$OPENWRT_NAME/system
         $GITHUB_WORKSPACE/$OPENWRT_NAME/system-Information.sh
-      
+        
     - name: Download firmware source code
       run: |
         git clone --depth 1 $REPO_URL -b $REPO_BRANCH openwrt
 
-    - name: Update feeds
+    - name: Update & install feeds
+      working-directory: ./openwrt
       run: |
-        cd openwrt
-        echo "OPENWRTROOT=$PWD" >> $GITHUB_ENV
-        echo "OPENWRTROOT=$PWD" >> $GITHUB_OUTPUT
-        mkdir customfeeds
-        git clone --depth=1 https://github.com/coolsnowwolf/packages customfeeds/packages
-        git clone --depth=1 https://github.com/coolsnowwolf/luci customfeeds/luci
-        chmod +x ../scripts/*.sh
-        ../scripts/hook-feeds.sh
-        
-    - name: Install Go 1.25
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.25'    
-        
-    - name: Install feeds
-      run: |
-        cd openwrt
+        ./scripts/feeds update -a
         ./scripts/feeds install -a
-        rm -rf feeds/packages/lang/golang
-        git clone https://github.com/sbwml/packages_lang_golang -b 25.x feeds/packages/lang/golang
         
     - name: Load feeds.conf.default
       run: |
@@ -90,21 +89,14 @@ jobs:
         [ -e "$CONFIG_FILE" ] && cat "$CONFIG_FILE" > openwrt/.config
         chmod +x $OPENWRT_NAME/*.sh && cd openwrt
         $GITHUB_WORKSPACE/$DIY_P2_SH
-    - name: Start tmate session
-      uses: mxschmitt/action-tmate@v3
-      with:
-        limit-access-to-actor: false
-          
+
     - name: Download the installation package
       id: package
       run: |
         cd openwrt
         make defconfig
         cat .config
-        make download -j$(nproc) V=s \
-        DOWNLOAD_TOOL=aria2c \
-        DOWNLOAD_ARGS="--max-tries=5 --timeout=60 --dir=dl --max-concurrent-downloads=5 --split=5 --min-split-size=1M"
-
+        make download -j$(nproc)
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
              
